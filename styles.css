@@ -489,7 +489,74 @@ body {
 .category-insights {
     display: flex;
     flex-direction: column;
-    gap: var(--spacing-sm);
+    gap: var(--spacing-md);
+}
+
+.insight-content {
+    padding: var(--spacing-lg);
+    background: linear-gradient(135deg, #f8fffe 0%, #f1f8f7 100%);
+    border-radius: var(--radius-md);
+    font-size: 15px;
+    line-height: 1.8;
+    color: var(--text-primary);
+    border-left: 4px solid var(--secondary-color);
+    animation: fadeInLeft 0.3s ease-out;
+}
+
+.insight-content h1,
+.insight-content h2,
+.insight-content h3 {
+    margin: var(--spacing-md) 0 var(--spacing-sm) 0;
+    color: var(--primary-color);
+    font-weight: 600;
+}
+
+.insight-content h1 {
+    font-size: 20px;
+    border-bottom: 2px solid var(--border-color);
+    padding-bottom: var(--spacing-sm);
+}
+
+.insight-content h2 {
+    font-size: 18px;
+    margin-top: var(--spacing-lg);
+}
+
+.insight-content h3 {
+    font-size: 16px;
+    color: var(--text-primary);
+}
+
+.insight-content p {
+    margin: var(--spacing-sm) 0;
+    color: var(--text-primary);
+}
+
+.insight-content ul {
+    margin: var(--spacing-sm) 0;
+    padding-left: var(--spacing-lg);
+    list-style: none;
+}
+
+.insight-content ul li {
+    position: relative;
+    padding-left: var(--spacing-md);
+    margin: var(--spacing-xs) 0;
+    line-height: 1.7;
+}
+
+.insight-content ul li::before {
+    content: "•";
+    position: absolute;
+    left: 0;
+    color: var(--secondary-color);
+    font-weight: bold;
+    font-size: 18px;
+}
+
+.insight-content strong {
+    color: var(--primary-color);
+    font-weight: 600;
 }
 
 .insight-item {
@@ -514,6 +581,13 @@ body {
 .insight-text {
     flex: 1;
     color: var(--text-primary);
+}
+
+.insight-error {
+    padding: var(--spacing-md);
+    text-align: center;
+    color: var(--text-muted);
+    font-style: italic;
 }
 
 /* 加载状态 */
