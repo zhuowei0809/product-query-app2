@@ -269,6 +269,61 @@ async function fetchFromGetNote(category) {
     }
 }
 
+// 将Markdown格式转换为HTML
+function markdownToHtml(text) {
+    if (!text) return '';
+    
+    let html = text;
+    
+    // 处理标题 ###
+    html = html.replace(/^###\s*(.+)$/gm, '<h3>$1</h3>');
+    html = html.replace(/^##\s*(.+)$/gm, '<h2>$1</h2>');
+    html = html.replace(/^#\s*(.+)$/gm, '<h1>$1</h1>');
+    
+    // 处理粗体 **text**
+    html = html.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
+    
+    // 处理列表项 - 或 *
+    html = html.replace(/^[-*]\s+(.+)$/gm, '<li>$1</li>');
+    
+    // 处理数字列表 1. 2. 等
+    html = html.replace(/^(\d+)\.\s+(.+)$/gm, '<li>$2</li>');
+    
+    // 将连续的<li>包装在<ul>中
+    html = html.replace(/(<li>.*<\/li>\n?)+/g, function(match) {
+        return '<ul>' + match + '</ul>';
+    });
+    
+    // 处理段落（将连续文本包装在<p>中）
+    const lines = html.split('\n');
+    const processedLines = [];
+    let currentParagraph = [];
+    
+    lines.forEach(function(line) {
+        line = line.trim();
+        if (!line) {
+            if (currentParagraph.length > 0) {
+                processedLines.push('<p>' + currentParagraph.join(' ') + '</p>');
+                currentParagraph = [];
+            }
+        } else if (line.startsWith('<h') || line.startsWith('<ul') || line.startsWith('</ul')) {
+            if (currentParagraph.length > 0) {
+                processedLines.push('<p>' + currentParagraph.join(' ') + '</p>');
+                currentParagraph = [];
+            }
+            processedLines.push(line);
+        } else {
+            currentParagraph.push(line);
+        }
+    });
+    
+    if (currentParagraph.length > 0) {
+        processedLines.push('<p>' + currentParagraph.join(' ') + '</p>');
+    }
+    
+    return processedLines.join('\n');
+}
+
 // 解析Get笔记API响应
 function parseGetNoteResponse(data) {
     console.log('Get笔记API返回:', data);
@@ -293,32 +348,24 @@ function parseGetNoteResponse(data) {
     } else if (data.message) {
         // 可能是错误消息
         console.warn('API返回消息:', data.message);
-        return ['暂无该品类的详细洞察数据'];
+        return { type: 'error', content: '暂无该品类的详细洞察数据' };
     } else {
         console.warn('无法解析API响应格式:', data);
-        return ['暂无该品类的详细洞察数据'];
+        return { type: 'error', content: '暂无该品类的详细洞察数据' };
     }
 
     // 清理文本：移除多余的空白字符
     answerText = answerText.trim();
 
     if (!answerText || answerText.length === 0) {
-        return ['暂无该品类的详细洞察数据'];
+        return { type: 'error', content: '暂无该品类的详细洞察数据' };
     }
 
-    // 将长文本按句号、问号、感叹号或换行符分割成多条洞察
-    const insights = answerText
-        .split(/[。！？\n]/)
-        .map(function (s) { return s.trim(); })
-        .filter(function (s) { return s.length > 5 && s.length < 200; })
-        .slice(0, 5); // 最多返回5条洞察
-
-    // 如果分割后没有有效内容，返回整个文本（截取前500字符）
-    if (insights.length === 0) {
-        return [answerText.substring(0, 500)];
-    }
-
-    return insights;
+    // 返回完整的HTML内容，而不是分割的数组
+    return { 
+        type: 'html', 
+        content: markdownToHtml(answerText) 
+    };
 }
 
 // ========================================
@@ -372,14 +419,34 @@ function showCategoryLoading(category) {
 
 // 显示品类洞察
 function showCategoryInsights(category, insights) {
-    if (!categorySection || !insights || insights.length === 0) return;
+    if (!categorySection) return;
 
     categoryName.textContent = category;
 
     let insightsHTML = '';
-    insights.forEach(function (insight) {
-        insightsHTML += '<div class="insight-item"><span class="insight-icon">💡</span><span class="insight-text">' + insight + '</span></div>';
-    });
+    
+    // 如果insights是对象（新的结构化格式）
+    if (insights && typeof insights === 'object' && insights.type) {
+        if (insights.type === 'error') {
+            insightsHTML = '<div class="insight-error">' + insights.content + '</div>';
+        } else if (insights.type === 'html') {
+            // 直接使用HTML内容
+            insightsHTML = '<div class="insight-content">' + insights.content + '</div>';
+        }
+    } 
+    // 如果是数组（旧的格式，兼容处理）
+    else if (Array.isArray(insights) && insights.length > 0) {
+        insights.forEach(function (insight) {
+            insightsHTML += '<div class="insight-item"><span class="insight-icon">💡</span><span class="insight-text">' + insight + '</span></div>';
+        });
+    } 
+    // 如果是字符串
+    else if (typeof insights === 'string') {
+        insightsHTML = '<div class="insight-content">' + markdownToHtml(insights) + '</div>';
+    }
+    else {
+        insightsHTML = '<div class="insight-error">暂无该品类的详细洞察数据</div>';
+    }
 
     categoryInsights.innerHTML = insightsHTML;
     categorySection.classList.remove('hidden');
